@@ -17,12 +17,17 @@ int main(int argc, char* argv[]) {
     char buf[BUFSIZE];
     int fd, n;
 
-     
+    char *path;
+
     if (argc == 2) {
-        fd = open(argv[1], O_RDONLY);
-    } else if (argc == 4) {
-        //fd = open(argv[2], O_APPEND | O_WRONLY);
+        path = argv[1]; 
+        n = 5;
+    } else if (argc == 4 && argv[1] == '-n') {
+        path = argv[3];
+        n = atoi(argv[2]);
     }
+
+    fd = open(path, O_RDONLY);
 
     int pos = lseek(fd, 0, SEEK_END);
     int cnt_new_line = 0;
