@@ -5,7 +5,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#define BUFSIZE 256
 
 char get_file_type(struct stat *statbuf);
 void print_permissions(struct stat *statbuf);
@@ -23,6 +22,7 @@ int main(int argc, char* argv[]) {
     // Open current dir
     if ((dp = opendir(".")) == NULL) {
         perror("Error opening current dirrectory");
+        return 1;
     }
 
     // Read
@@ -35,17 +35,16 @@ int main(int argc, char* argv[]) {
         printf("%c ", get_file_type(&statbuf));
 
         // Hard links
-        printf("Number of hard links: %lu\n", statbuf.st_nlink);     // unsigned long
+        printf("Number of hard links: %lu", statbuf.st_nlink); 
 
         // name
         printf("%s\n", dirp->d_name);
-
-
     }
 
     // Close
     if (closedir(dp) < 0) {
-        perror("");
+        perror("Error closing directory");
+        return 1;
     }
 
     return 0;
@@ -81,14 +80,12 @@ void print_permissions(struct stat *statbuf) {
     //     = 0b100 000 000 (binary)
     //     = 256 (decimal)
 
-    // & And opertation (check if bit 8 is active)
-    //statbuf.st_mode & S_IRUSR
-
     // Owner permissions
     printf("%c", (statbuf->st_mode & S_IRUSR) ? 'r' : '-'); // read
     printf("%c", (statbuf->st_mode & S_IWUSR) ? 'w' : '-'); // write
-    printf("%c", (statbuf->st_mode & S_IXUSR) ? 'x' : '-'); // execute
+    //printf("%c", (statbuf->st_mode & S_IXUSR) ? 'x' : '-'); // execute
 
+    // & And opertation (check if bit 8 is active)
     if (statbuf->st_mode & S_ISUID)
         printf("%c", (statbuf->st_mode & S_IXUSR) ? 's' : 'S');
     else
@@ -97,22 +94,24 @@ void print_permissions(struct stat *statbuf) {
     // Group permissions
     printf("%c", (statbuf->st_mode & S_IRGRP) ? 'r' : '-'); // read
     printf("%c", (statbuf->st_mode & S_IWGRP) ? 'w' : '-'); // write
-    printf("%c", (statbuf->st_mode & S_IXGRP) ? 'x' : '-'); // execute
+    //printf("%c", (statbuf->st_mode & S_IXGRP) ? 'x' : '-'); // execute
 
-    //     if (statbuf->st_mode & S_ISGID)
-    //     printf("%c", (statbuf->st_mode & S_IXGRP) ? 's' : 'S');
-    // else
-    //     printf("%c", (statbuf->st_mode & S_IXGRP) ? 'x' : '-');
+    // Execute
+    if (statbuf->st_mode & S_ISGID)
+        printf("%c", (statbuf->st_mode & S_IXGRP) ? 's' : 'S');
+    else
+        printf("%c", (statbuf->st_mode & S_IXGRP) ? 'x' : '-');
 
     // Others permissions
     printf("%c", (statbuf->st_mode & S_IROTH) ? 'r' : '-'); // read
     printf("%c", (statbuf->st_mode & S_IWOTH) ? 'w' : '-'); // write
     printf("%c", (statbuf->st_mode & S_IXOTH) ? 'x' : '-'); // execute
 
-    //     if (statbuf->st_mode & S_ISVTX)
-    //     printf("%c", (statbuf->st_mode & S_IXOTH) ? 't' : 'T');
-    // else
-    //     printf("%c", (statbuf->st_mode & S_IXOTH) ? 'x' : '-');
+    // Execute
+    if (statbuf->st_mode & S_ISVTX)
+        printf("%c", (statbuf->st_mode & S_IXOTH) ? 't' : 'T');
+    else
+        printf("%c", (statbuf->st_mode & S_IXOTH) ? 'x' : '-');
 }
 
 // Binary: 001 000 000 110 100 000
