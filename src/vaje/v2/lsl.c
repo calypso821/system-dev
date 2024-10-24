@@ -4,13 +4,22 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <string.h>
 
+#define PATH_MAX 256
 
 char get_file_type(struct stat *statbuf);
-void print_permissions(struct stat *statbuf);
+void print_mode(struct stat *statbuf);
 
 int main(int argc, char* argv[]) {
-    if (!(argc == 2 && *argv[1] == '-' && *(argv[1] + 1) == 'l')) {
+    char *dir;
+    if (argc == 2 && strcmp(argv[1], "-l") == 0) {
+        // Current directory
+        dir = ".";
+    } else if (argc == 3 && strcmp(argv[1], "-l") == 0) {
+        // Input directory
+        dir = argv[2];
+    } else {
         printf("Usage: %s -l\n", argv[0]);
         return 0;
     }
@@ -18,32 +27,41 @@ int main(int argc, char* argv[]) {
     DIR *dp;
     struct dirent *dirp;
     struct stat statbuf;
+    char fullpath[PATH_MAX];
+
 
     // Open current dir
-    if ((dp = opendir(".")) == NULL) {
-        perror("Error opening current dirrectory");
+    if ((dp = opendir(dir)) == NULL) {
+        perror("Error opening current dirrectory"); 
         return 1;
     }
 
     // Read
     while ((dirp = readdir(dp)) != NULL)
     {
+        // Construcut full paht = dir and file name
+        sprintf(fullpath, "%s/%s", dir, dirp->d_name);
+
         // Check type (dict, regular file...)
-        if (stat(dirp->d_name, &statbuf) < 0) {
+        if (stat(fullpath, &statbuf) < 0) {
             perror("");
         }
-        printf("%c ", get_file_type(&statbuf));
+        // Print file type
+        printf("%c", get_file_type(&statbuf));
 
-        // Hard links
-        printf("Number of hard links: %lu", statbuf.st_nlink); 
+        // Print mode
+        print_mode(&statbuf);
+
+        // Print hard links
+        printf(" %lu", statbuf.st_nlink); 
 
         // name
-        printf("%s\n", dirp->d_name);
+        printf(" %s\n", dirp->d_name);
     }
 
     // Close
     if (closedir(dp) < 0) {
-        perror("Error closing directory");
+        perror("");
         return 1;
     }
 
@@ -75,7 +93,7 @@ char get_file_type(struct stat *statbuf) {
         return '?';
 }
 
-void print_permissions(struct stat *statbuf) {
+void print_mode(struct stat *statbuf) {
     // S_IRUSR = 0400 (octal)
     //     = 0b100 000 000 (binary)
     //     = 256 (decimal)
@@ -105,7 +123,7 @@ void print_permissions(struct stat *statbuf) {
     // Others permissions
     printf("%c", (statbuf->st_mode & S_IROTH) ? 'r' : '-'); // read
     printf("%c", (statbuf->st_mode & S_IWOTH) ? 'w' : '-'); // write
-    printf("%c", (statbuf->st_mode & S_IXOTH) ? 'x' : '-'); // execute
+    //printf("%c", (statbuf->st_mode & S_IXOTH) ? 'x' : '-'); // execute
 
     // Execute
     if (statbuf->st_mode & S_ISVTX)
@@ -141,7 +159,7 @@ void print_permissions(struct stat *statbuf) {
 // Position mapping:
 // Owner:  s/S (SUID)    - Set User ID
 // Group:  s/S (SGID)    - Set Group ID
-// Others: t/T (Sticky)  - Sticky bit
+// Others: t/T (Sticky)  - Sticky bit (for temp files)
 
 // 's' (lowercase) = SUID is set AND execute is set
 // - S_ISUID (4000) + S_IXUSR (100) = 4100 octal

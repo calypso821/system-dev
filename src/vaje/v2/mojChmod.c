@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 void mode_to_str(mode_t mode, char *str);
 
@@ -19,7 +20,7 @@ int main(int argc, char* argv[]) {
     mode_t mode;
 
     // Parse mode 
-    if (argv[1][0] == "0") {
+    if (atoi(argv[1]) || argv[1][0] == '0') {
         // Octal format
         char *ep;
         mode = strtol(argv[1], &ep, 8);
@@ -88,8 +89,9 @@ void mode_to_str(mode_t mode, char *str) {
             //                   --------
             // AND result:       01000000
             // (non-zero means permission granted) - add char at pos j
-            int bit = mode & (1 << (offset + j));
-            
+            int mask = 1 << (offset + (2 - j));
+            int bit = mode & mask;
+
             // Check special cases for execute bit positions
             if (j == 2) { // Execute bit position
                 if (i == 0 && (mode & S_ISUID)) { // User
@@ -114,49 +116,3 @@ void mode_to_str(mode_t mode, char *str) {
     }
     str[9] = '\0';
 }
-
-// Binary: 001 000 000 110 100 000
-
-// Breaking it down from right to left (each 3 bits = 1 octal digit):
-// 000 = 0
-// 100 = 4
-// 110 = 6
-// 000 = 0
-// 000 = 0
-// 001 = 1
-
-// So: binary 001 000 000 110 100 000 = octal 100640
-
-// Meaning of these bits:
-// 001 000 000  | 110 | 100 | 000
-//    special   | usr | grp | oth
-//    (1)       | (6) | (4) | (0)
-
-// Which means:
-// - Special bits: 1 (SUID set)
-// - User permissions: 6 (rw-)
-// - Group permissions: 4 (r--)
-// - Others permissions: 0 (---)
-
-// Special bits
-// Position mapping:
-// Owner:  s/S (SUID)    - Set User ID
-// Group:  s/S (SGID)    - Set Group ID
-// Others: t/T (Sticky)  - Sticky bit
-
-// 's' (lowercase) = SUID is set AND execute is set
-// - S_ISUID (4000) + S_IXUSR (100) = 4100 octal
-// - User can execute AND program runs with owner's privileges
-
-// 'S' (uppercase) = SUID is set but execute is NOT set
-// - S_ISUID (4000) only, no S_IXUSR
-// - Program has SUID but can't be executed (usually a misconfiguration)
-
-// 't' (lowercase) = Sticky bit (S_ISVTX) AND execute bit are set
-// - S_ISVTX (1000) + S_IXOTH (001) 
-// - Directory can be executed (searched/accessed) and sticky bit is active
-// - Common on directories like /tmp
-
-// 'T' (uppercase) = Sticky bit set but execute is NOT set
-// - Just S_ISVTX (1000), no execute
-// - Rarely seen, usually a misconfiguration
