@@ -1,8 +1,15 @@
 #include <stdio.h>
+#include <string.h>
+#include <err.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-#define BUFSIZE 254
+#define BUFFSIZE 254
 
-int main (int argc, char *argv)
+void copy_all_lines(FILE *src, FILE *dst, char *buf, size_t buf_size);
+void copy_n_lines(FILE *src, FILE *dst, char *buf, size_t buf_size, int n); 
+
+int main (int argc, char *argv[])
 {
     char *mode;
     int n;
@@ -13,12 +20,12 @@ int main (int argc, char *argv)
     }
     else if (argc == 4 && strcmp(argv[2], "-d") == 0) {
         // Delete mode
-        n = atoi(argv[3]);
+        n = atoi(argv[3]) - 1;
         mode = "r+";
     }
     else if (argc == 4 && strcmp(argv[2], "-i") == 0) {
         // Insert mode
-        n = atoi(argv[3]);
+        n = atoi(argv[3]) - 1;
         mode = "r+";
     }
     else {
@@ -28,7 +35,7 @@ int main (int argc, char *argv)
     }
 
     FILE *fp;
-    char buf[BUFSIZE];
+    char buf[BUFFSIZE];
     char *line;
 
     if ((fp = fopen(argv[1], mode)) == NULL) {
@@ -36,7 +43,7 @@ int main (int argc, char *argv)
     }
 
     
-    if (strcmp(argv[2], "-a"))
+    if (strcmp(argv[2], "-a") == 0)
     {
         // Append mode
 
@@ -56,45 +63,75 @@ int main (int argc, char *argv)
         }
         // If Ctrl + D pressed = EOF (no error)
     }
-    else if (strcmp(argv[2], "-d"))
+    else if (strcmp(argv[2], "-d") == 0)
     {
         // Delete mode
         FILE *temp;
         if ((temp = fopen("temp.txt", "w")) == NULL) {
             err(1, "failed opening temp file");
         }
-        int cnt = 0;
 
-        // 1. Write all lines from original file to temp (execpt n line)
-        while (fgets(buf, sizeof(buf), fp) != NULL)
-        {
-            if (cnt != n) {
-                if (fputs(buf, temp) == EOF) {
-                    err(1, "fputs filed");
-                }
-            }
-            cnt++;
-        }
-        // Check exit status of wile loop (fgets)
-        if (ferror(fp)) {
-            err(1, "fgets failed");
-        }
-
-        // 2. Write back all lines from temp to original file 
-        // Set seek of temp to 0 
-        // truncate fp
-        // DOOOOO temp for bufferd
+        // Write n lines fron original to temp file
+        copy_n_lines(fp, temp, buf, sizeof(buf), n);
         
-        while (fgets(buf, sizeof(buf), temp) != NULL)
-        {
-            if (fputs(buf, fp) == EOF) {
-                err(1, "fputs filed");
-            }
-        }
-        // Check exit status of wile loop (fgets)
-        if (ferror(temp)) {
-            err(1, "fgets failed");
+        // Read 1 line -> will be skipped (deleted)
+        fgets(buf, sizeof(buf), fp);
+
+        // Write rest of lines from original to temp file
+        copy_all_lines(fp, temp, buf, sizeof(buf));
+
+        fclose(temp);
+        fclose(fp);
+        // Delete original
+        unlink(argv[1]);      
+        // Rename temp              
+        rename("temp.txt", argv[1]);  
+    }
+    else if (strcmp(argv[2], "-i") == 0)
+    {
+        // Insert mode
+        FILE *temp;
+        if ((temp = fopen("temp.txt", "w")) == NULL) {
+            err(1, "failed opening temp file");
         }
 
+        // Write n lines fron original to temp file
+        copy_n_lines(fp, temp, buf, sizeof(buf), n);
+        
+        // Insert new line
+        fputc('\n', temp);
+
+        // Write rest of lines from original to temp file
+        copy_all_lines(fp, temp, buf, sizeof(buf));
+
+        fclose(temp);
+        fclose(fp);
+        unlink(argv[1]);                    // Delete original
+        rename("temp.txt", argv[1]);  // Rename temp
+    }
+    return 0;
+}
+
+void copy_all_lines(FILE *src, FILE *dst, char *buf, size_t buf_size) 
+{
+    while (fgets(buf, buf_size, src) != NULL) {
+        if (fputs(buf, dst) == EOF) {
+            err(1, "fputs failed");
+        }
+    }
+    if (ferror(src)) {
+        err(1, "fgets failed");
+    }
+}
+
+void copy_n_lines(FILE *src, FILE *dst, char *buf, size_t buf_size, int n) 
+{
+    for (int i = 0; i < n && fgets(buf, buf_size, src) != NULL; i++) {
+        if (fputs(buf, dst) == EOF) {
+            err(1, "fputs failed");
+        }
+    }
+    if (ferror(src)) {
+        err(1, "fgets failed");
     }
 }

@@ -9,6 +9,7 @@
             //"args": ["-a", "res/empty.txt"],
             //"args": ["-l"],
             //"args": ["0664", "res/test.txt"],
+            "args": ["build/test.txt", "-i", "2"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

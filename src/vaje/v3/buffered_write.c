@@ -6,7 +6,7 @@
 #define BUFSIZE1 10
 #define BUFSIZE2 100
 
-int main(int argc, char *argv)
+int main(int argc, char *argv[])
 {
     // time_t start, end; // Second percision only
     struct timespec start, end;
