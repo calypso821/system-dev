@@ -18,10 +18,10 @@ int main(int argc, char *argv)
     FILE *fp2;
 
     // Create both files (streams with file pointer)
-    if ((fp1 = fopen("out1.txt", "w")) == NULL) {
+    if ((fp1 = fopen("build/out1.txt", "w")) == NULL) {
         err(1, "failed to open out1.txt");
     }
-    if ((fp2 = fopen("out2.txt", "w")) == NULL) {
+    if ((fp2 = fopen("build/out2.txt", "w")) == NULL) {
         err(1, "failed to open out2.txt");
     }
 
@@ -62,7 +62,7 @@ int main(int argc, char *argv)
 
     clock_gettime(CLOCK_REALTIME, &end);
     elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-9;
-    printf("Elapsed time fully buffered stream (buffer size: %d): %fs\n", BUFSIZE1, elapsed);
+    printf("Elapsed time fully buffered stream (buffer size: %d): %fs\n", BUFSIZE2, elapsed);
 
     // line length = 20
     // Buffer 1 (size 10) - 2x system calls per fputs()

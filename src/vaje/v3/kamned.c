@@ -83,6 +83,8 @@ int main (int argc, char *argv)
         // 2. Write back all lines from temp to original file 
         // Set seek of temp to 0 
         // truncate fp
+        // DOOOOO temp for bufferd
+        
         while (fgets(buf, sizeof(buf), temp) != NULL)
         {
             if (fputs(buf, fp) == EOF) {
