@@ -7,7 +7,7 @@
             "program": "${workspaceFolder}/build/${fileBasenameNoExtension}",
             //"args": ["-n", "2",  "res/test.txt"],
             //"args": ["-a", "res/empty.txt"],
-            "args": ["-l"],
+            //"args": ["-l"],
             //"args": ["0664", "res/test.txt"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
