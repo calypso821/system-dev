@@ -50,13 +50,16 @@ int main (int argc, char *argv[])
         // Read from stdin -> append to end of file
         // Stop Ctrl + D (EOF)
         // Line buffereed (stream propery) of stdin
+        printf("Append line: ");
         while (fgets(buf, sizeof(buf), stdin) != NULL)
         {
             // Full buffereed (stream propery) of fp
             if (fputs(buf, fp) == EOF) {
                 err(1, "fputs filed");
             }
+            printf("Append line: ");
         }
+        printf("\n");
         // Check exit status of wile loop (fgets)
         if (ferror(stdin)) {
             err(1, "fgets failed");
@@ -99,7 +102,16 @@ int main (int argc, char *argv[])
         copy_n_lines(fp, temp, buf, sizeof(buf), n);
         
         // Insert new line
-        fputc('\n', temp);
+        printf("Insert line: ");
+        while (fgets(buf, sizeof(buf), stdin) != NULL)
+        {
+            // Full buffereed (stream propery) of fp
+            if (fputs(buf, temp) == EOF) {
+                err(1, "fputs filed");
+            }
+            printf("Insert line: ");
+        }
+        printf("\n");
 
         // Write rest of lines from original to temp file
         copy_all_lines(fp, temp, buf, sizeof(buf));

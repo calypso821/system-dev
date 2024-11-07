@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
         err(1, "failed to open out2.txt");
     }
 
-    char *line = "Danes je lep dan!\n"; // 19 chars (2x calls)
-    //char *line = "Danes je\n"; // 10 chars (1x call)
+    //char *line = "Danes je lep dan!\n"; // 19 chars (2x calls)
+    char *line = "Danes je\n"; // 10 chars (1x call)
 
     // Set buffer to full buffering mode and size of 10 and 100
     if (setvbuf(fp1, buf, _IOFBF, BUFSIZE1)) {
