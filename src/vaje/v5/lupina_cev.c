@@ -1,13 +1,3 @@
-// 1. Ujemi signal + neprespani cas
-// Odspi cas, ki ga more se prespat
-// Izklopi alram + nazaj prizki (nsprespan cas)
-
-// check if there is => 
-// if (=>) make 2 kids 2x exec
-// close (fd1)
-// 2. otrok vhod = izhod 1.
-// 1. otrok izhud = vhod 2.
-
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -32,6 +22,9 @@ void sig_handler(int signo) {
         printf("\nCaught SIGUSR1 (signal %d)\n", signo);
     exit(0);
 }
+// ps -ef => grep --color=always root
+// Grep disable coloring when ouput to pipe
+// Force enable
 
 int main(void)  
 {
@@ -72,47 +65,32 @@ int main(void)
 
         char **left, **right;
         bool pipe_status = check_if_pipe(args, &left, &right);
-
-        if (pipe_status)
-        {
-
-        }
-
-
+        
         // Create child for command execute
         if ((pid = fork()) < 0)
             err_sys("fork error")
         else if (pid == 0) { // child 1
             if (pipe_status)
             {
-                // Child 1 
-                close(pfd[1]);
-                // STDIN points to same fd as pfd[0]
-                // pfd[0] = read from pipe
-                dup2(pfd[0], STDIN_FILENO);
-                // pfd[0] not needed anymore
-                close(pfd[0]);
-            }
+                // Create pipe first if needed
+                if (pipe(pfd) == -1) {
+                    err_sys("pipe error");
+                }
 
-            // Execute left side 
-            execvp(left[0], left);
-            printf("couldn't execute: %s\n", buf);
-            exit(127);
+                pid_t pid2;
 
-            if (pipe_status) {
-                // Create pipe
-                if (pipe(pfd) == -1)
-                    err_sys("pipe error")
-                // Create new child
-                if ((pid = fork()) < 0)
-                    err_sys("fork error")
-                else if (pid == 0) { // child 2
-                    close(pfd[1]);
-                    // STDIN points to same fd as pfd[0]
-                    // pfd[0] = read from pipe
-                    dup2(pfd[0], STDIN_FILENO);
-                    // pfd[0] not needed anymore
-                    close(pfd[0]);
+                // Create second child
+               if ((pid2 = fork()) < 0) {
+                    err_sys("fork error");
+                }
+                else if (pid2 == 0) { // child 2
+                    //sleep(1);
+                    // Configure for reading from pipe
+                    close(pfd[1]);  // Close write end
+                    if (dup2(pfd[0], STDIN_FILENO) == -1) {
+                        err_sys("dup2 error (child2)");
+                    }
+                    close(pfd[0]);  // Close after dup2
 
                     // Execute right side 
                     execvp(right[0], right);
@@ -120,13 +98,22 @@ int main(void)
                     exit(127);
                 }
 
-                // starš (child1) - wait for child to finish
-                if ((pid = waitpid(pid, &status, 0)) < 0)
-                    err_sys("waitpid error")
+                // Child 1 
+                //Configure for writing to pipe
+                close(pfd[0]);  // Close read end
+                if (dup2(pfd[1], STDOUT_FILENO) == -1) {
+                    err_sys("dup2 error (child1)");
+                }
+                close(pfd[1]);  // Close after dup2;
             }
+
+            // Execute left side 
+            execvp(left[0], left);
+            printf("couldn't execute: %s\n", buf);
+            exit(127);
  
         }
-        // starš - wait for child to finish
+        // parent - wait for child 1 to finish
         if ((pid = waitpid(pid, &status, 0)) < 0)
             err_sys("waitpid error")
 
