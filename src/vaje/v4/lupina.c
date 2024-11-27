@@ -18,18 +18,27 @@ void parse(char *command_str, char *args[])
 
     while (*command_str != '\0' && nargs < MAX_ARGS - 1)
     {
-        if (*command_str == ' ')
+        // Reapcle all empty with '\0'
+        while (*command_str == ' ' || *command_str == '\t')
         {
-            // New argument
-            *command_str = '\0';
-            // Save pointer of next argument
-            args[++nargs] = command_str + 1;
+            *command_str++ = '\0';
         }
-        // Increse command_str index
-        command_str++; 
+        // Mark new arg
+        if (*command_str != 0)
+        {
+            *args++ = command_str;
+        }
+        // increment until end of arg
+        while (*command_str != ' ' &&
+                *command_str != '\t' && 
+                *command_str != '\0')
+            {
+                *command_str++;
+            }
     }
-    // Change last arg to be null pointer
-    args[++nargs] = NULL;
+    // Change last arg pointer to be null
+    // *args = (char *)0;
+    *args = NULL;
 }
 
 void parse_strtok(char* command_str, char *args[])
@@ -52,7 +61,7 @@ void sig_handler(int signo) {
     exit(0);
 }
 
-int main(void)
+int main(void)  
 {
     if (signal(SIGINT, sig_handler) == SIG_ERR) {
         err_sys("can't catch SIGINT");
@@ -88,7 +97,7 @@ int main(void)
 
 
         // Create child for command execute
-        if ( (pid = fork()) < 0)
+        if ((pid = fork()) < 0)
             err_sys("fork error")
         else if (pid == 0) { // child
             execvp(args[0], args);
@@ -96,7 +105,7 @@ int main(void)
             exit(127);
         }
         // starš - wait for child to finish
-        if ( (pid = waitpid(pid, &status, 0)) < 0)
+        if ((pid = waitpid(pid, &status, 0)) < 0)
             err_sys("waitpid error")
 
         // Next command
