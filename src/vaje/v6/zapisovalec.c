@@ -65,6 +65,11 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Close file
+    if (fclose(fp) != 0) {
+        err("failed closing file");
+    }
+
 	// Clean msg queue strucutre
 	if (msgctl( msqid, IPC_RMID, NULL) < 0)
 		err("msgctl")
