@@ -46,14 +46,14 @@ int main(int argc, char *argv[])
         if (msgrcv(msqid, &msgbuf, sizeof(msgbuf.mtext), 0, 0) < 0)
 		    err("msgrcv")
 
-        printf("Message received: ");
-	    puts(msgbuf.mtext);
-
         // Check for empty message first
         if (msgbuf.mtext[0] == '\0') {
             printf("Empty message received, program end!\n");
             break;
         }
+
+        printf("Message received: ");
+	    puts(msgbuf.mtext);
 
         // Write message to file
         if (fputs(msgbuf.mtext, fp) == EOF) {

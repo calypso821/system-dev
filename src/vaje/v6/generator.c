@@ -57,7 +57,7 @@ int main()
 	operation[0].sem_flg = 0; // Wait for resource (blocking)
 
     // Write to shared memory 
-    for (int i = 0; i < 5; i++)
+    for (int i = 1; i < 5; i++)
     {
         // Dectrement (lock)
         operation[0].sem_op = -1;
