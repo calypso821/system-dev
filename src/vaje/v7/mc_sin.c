@@ -4,7 +4,7 @@
 #include <math.h>
 // -lm (link math)
 
-#define P_MAX 400000000
+#define P_MAX 1e9
 #define PI 3.14159265358979323846
 
 // Global
@@ -20,9 +20,11 @@ struct timespec timeStart, timeEnd;
 void *shoot_points(void *arg)
 {
     // Create unique seed based of thread id
-    unsigned int seed = (long)arg;
+    // unsigned int seed = (unsigned int)arg;
+    // Seed based of current time
+    unsigned int seed = (unsigned int)time(NULL);
     // All points, points in circle
-    int p = 10000000;
+    int p = 1e6;
     int z;
     int itteration = 0;
 
@@ -58,8 +60,8 @@ void *shoot_points(void *arg)
             // Rectangle area [1, PI] = PI
             // Probability = sin(x) area / PI
             // sin(x) area = PI * P
-            printf("Thread: %ld, Itteration: %d, New sin(x) area: %f\n",
-                    (long)arg, itteration, PI * zs / ps);
+            // printf("Thread: %ld, Itteration: %d, New sin(x) area: %f\n",
+            //         (long)arg, itteration, PI * ((double)zs / ps));
             fflush(stdout);
         }
         else 
@@ -111,7 +113,7 @@ int main(int argc, char *argv[])
     printf("Elapsed time: %.9f seconds\n", elapsed_time);
 
     // Final pi S
-    printf("Final sin(x) [0, PI] area: %f\n", PI * zs / ps);
+    printf("Final sin(x) [0, PI] area: %f\n", PI * ((double)zs / ps));
     printf("PS: %d\n", ps);
 	
 	return 0;
