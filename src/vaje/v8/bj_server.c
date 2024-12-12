@@ -15,26 +15,16 @@
 
 #define DECK_SIZE 52
 
-char get_card_char(int card)
-{
-    switch (card) {
-        case 1:  return 'A';
-        case 10: return '10';
-        case 11: return 'J';
-        case 12: return 'Q';
-        case 13: return 'K';
-        default:
-            // For cards 2-10, convert number to ASCII char
-            // '0' -> 48 + 1 = 49 '1';
-            if (card >= 2 && card <= 9)
-                return '0' + card;
-            return '?';  // Invalid card
-    }
-}
-
 int draw(int *deck, int *top)
 {
     return deck[(*top)--];
+}
+
+int get_score(int card)
+{
+    if (card > 10)
+        return 10;
+    return card;
 }
 
 void create_deck(int *deck)
@@ -68,26 +58,23 @@ void play_bj(int connfd)
     create_deck(deck);
     shuffle_deck(deck);
     int top = DECK_SIZE - 1;
-    
     int player_score = 0;
     int dealer_score = 0;
-    char cards[3];
     char msg[MAXLINE];
 
     // Initial cards for player
     int card1 = draw(deck, &top);
     int card2 = draw(deck, &top);
-    player_score = card1 + card2;
+    player_score = get_score(card1) + get_score(card2);
 
     // Initial cards for dealer (one hidden)
     int dealer_card1 = draw(deck, &top);
     int dealer_card2 = draw(deck, &top);
-    dealer_score = dealer_card1 + dealer_card2;
-    
-    // Send initial cards and score to player
-    snprintf(msg, MAXLINE, "%c%c %d (Dealer shows: %c)", 
-             get_card_char(card1), get_card_char(card2), 
-             player_score, get_card_char(dealer_card1));
+    dealer_score = get_score(dealer_card1) + get_score(dealer_card2);
+
+    // Send initial cards and score to player: "card1 card2 score dealer_card1"
+    snprintf(msg, MAXLINE, "%d %d %d %d", 
+             card1, card2, player_score, dealer_card1);
     if (write(connfd, msg, strlen(msg)) != strlen(msg)) {
         err("write");
     }
@@ -96,55 +83,71 @@ void play_bj(int connfd)
     char choice[MAXLINE];
     int n;
     int game_over = 0;
-    
     while ((n = read(connfd, choice, MAXLINE)) > 0) {
         choice[n] = '\0';
-        
+
         if (choice[0] == 'h') {
             int new_card = draw(deck, &top);
-            player_score += new_card;
-            snprintf(msg, MAXLINE, "%c %d", get_card_char(new_card), player_score);
+            player_score += get_score(new_card);
+
+            snprintf(msg, MAXLINE, "%d %d", new_card, player_score);
+            write(connfd, msg, strlen(msg));
+            
+            if (player_score > 21) {
+                break;
+            }
+
+        }
+        else if (choice[0] == 's') {
+            // First send dealer's initial cards
+            snprintf(msg, MAXLINE, "%d %d %d", 
+                    dealer_card1, dealer_card2, dealer_score);
             if (write(connfd, msg, strlen(msg)) != strlen(msg)) {
                 err("write");
             }
-            
-            if (player_score > 21) {
-                snprintf(msg, MAXLINE, "BUST! Dealer wins!");
-                write(connfd, msg, strlen(msg));
-                game_over = 1;
-                break;
-            }
-        }
-        else if (choice[0] == 's') {
-            // Dealer's turn
-            snprintf(msg, MAXLINE, "Your final score: %d. Dealer's cards: %c%c (%d)", 
-                     player_score, get_card_char(dealer_card1), 
-                     get_card_char(dealer_card2), dealer_score);
-            write(connfd, msg, strlen(msg));
-            
+            usleep(100000);  // 100ms delay
+
             // Dealer draws until 17 or higher
             while (dealer_score < 17) {
                 int new_card = draw(deck, &top);
-                dealer_score += new_card;
-                snprintf(msg, MAXLINE, "\nDealer draws: %c (Total: %d)", 
-                         get_card_char(new_card), dealer_score);
-                write(connfd, msg, strlen(msg));
+                dealer_score += get_score(new_card);
+                // Send each dealer draw separately
+                snprintf(msg, MAXLINE, "%d %d", new_card, dealer_score);
+                if (write(connfd, msg, strlen(msg)) != strlen(msg)) {
+                    err("write");
+                }
+                usleep(100000);  // 100ms delay
             }
-            
-            // Determine winner
-            if (dealer_score > 21) {
-                snprintf(msg, MAXLINE, "\nDealer BUST! You win!");
-            } else if (dealer_score > player_score) {
-                snprintf(msg, MAXLINE, "\nDealer wins with %d!", dealer_score);
-            } else if (dealer_score < player_score) {
-                snprintf(msg, MAXLINE, "\nYou win with %d!", player_score);
-            } else {
-                snprintf(msg, MAXLINE, "\nIt's a tie at %d!", player_score);
-            }
-            write(connfd, msg, strlen(msg));
             break;
         }
     }
+    // Game finished
+    // Calculate result and send final message
+    const char *result;
+    if (player_score > 21) {
+        result = "LOSE";  // Player bust
+    } else if (dealer_score > 21) {
+        result = "WIN";   // Dealer bust
+    } else if (dealer_score > player_score) {
+        result = "LOSE";  // Dealer wins
+    } else if (dealer_score < player_score) {
+        result = "WIN";   // Player wins
+    } else {
+        result = "TIE";   // Equal scores
+    }
+
+    printf("Dealer score: %d\n", dealer_score);
+    printf("Player score: %d\n", player_score);
+    printf("Res: %s\n", result);
+    
+    // Send end signal before final result
+    snprintf(msg, MAXLINE, "END");
+    write(connfd, msg, strlen(msg));
+    usleep(100000);
+
+    // Send final result
+    snprintf(msg, MAXLINE, "%d %d %s", player_score, dealer_score, result);
+    write(connfd, msg, strlen(msg));
 }
 
 int main(int argc, char *argv[])
