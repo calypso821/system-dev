@@ -7,8 +7,8 @@
 MODULE_LICENSE("GPL");
 
 // Change these function declarations
-static int my_init(void);
-static void my_exit(void);
+static int device_init(void);
+static void device_exit(void);
 int device_open(struct inode *, struct file *);
 int device_release(struct inode *, struct file *);
 ssize_t device_read(struct file *, char *, size_t, loff_t *);
@@ -28,7 +28,7 @@ module_init(my_init);
 module_exit(my_exit);
 
 // Renamed init function
-static int my_init(void)
+static int device_init(void)
 {
     Major = register_chrdev(0, DEVICE_NAME, &fops);
     if (Major < 0) {
@@ -40,7 +40,7 @@ static int my_init(void)
 }
 
 // Renamed exit function
-static void my_exit(void)
+static void device_exit(void)
 {
     unregister_chrdev(Major, DEVICE_NAME);
 }
