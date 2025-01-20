@@ -194,78 +194,78 @@ out:
 }
 
 // Replace write
-// ssize_t qread_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
-// {
-//     // retrieves the device structure that was stored during device open
-//     struct qread_dev *dev = filp->private_data;
-//     ssize_t retval = -ENOMEM;
-
-//     printk(KERN_DEBUG "Write-Start: count: %zu\n", count);
-
-//     if (count > dev->S) {
-//         retval = -ENOSPC;  // No space for complete write
-//         goto out;
-//     }
-
-//     // Copy data from user space to kernel space starting at beginning of buffer
-//     // dev->data: Destination in kernel buffer (always start at beginning)
-//     // buf: Source buffer in user space
-//     // count: Number of bytes to copy
-//     if (copy_from_user(dev->data, buf, count)) {
-//         goto out;
-//     }
-
-//     // In replace mode, position and size are always same as write size
-//     *f_pos = count;
-//     dev->size = count;
-//     retval = count;
-
-//     printk(KERN_DEBUG "Write-End: written: %zu, size: %u\n", 
-//            count, dev->size);
-
-// out:
-//     return retval;
-// }
-
-// Sequential write
-ssize_t qread_write(struct file *filp, const char __user *buff, size_t count, loff_t *f_pos)
+ssize_t qread_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
     // retrieves the device structure that was stored during device open
     struct qread_dev *dev = filp->private_data;
     ssize_t retval = -ENOMEM;
-    size_t available_space;
 
-    printk(KERN_DEBUG "Write-Start: pos: %lld, count: %zu, size: %u\n", 
-           dev->size + *f_pos, count, dev->size);
+    printk(KERN_DEBUG "Write-Start: count: %zu\n", count);
 
-    // Check if we're trying to write past the buffer end
-    if (dev->size >= dev->S) {
+    if (count > dev->S) {
         retval = -ENOSPC;  // No space for complete write
         goto out;
     }
 
-    // Calculate available space (MaxSize - current size)
-    available_space = dev->S - dev->size;
-    if (count > available_space)
-        count = available_space;  // Truncate the write to available space
-
-    // Copy data from user space to kernel space
-    // dev->data + *f_pos: Destination in kernel buffer, offset by current position
+    // Copy data from user space to kernel space starting at beginning of buffer
+    // dev->data: Destination in kernel buffer (always start at beginning)
     // buf: Source buffer in user space
     // count: Number of bytes to copy
-    if (copy_from_user(dev->data + dev->size + *f_pos, buff, count)) {
-        retval = -EFAULT;
+    if (copy_from_user(dev->data, buf, count)) {
         goto out;
     }
 
-    printk(KERN_DEBUG "Write-End: pos: %lld, written: %zu, size: %zu\n", 
-        dev->size + *f_pos, count, dev->size + count);
-
-    // Update current position, size
-    *f_pos += count;
-    dev->size += count;
+    // In replace mode, position and size are always same as write size
+    *f_pos = count;
+    dev->size = count;
     retval = count;
+
+    printk(KERN_DEBUG "Write-End: written: %zu, size: %u\n", 
+           count, dev->size);
 
 out:
     return retval;
 }
+
+// Sequential write
+// ssize_t qread_write(struct file *filp, const char __user *buff, size_t count, loff_t *f_pos)
+// {
+//     // retrieves the device structure that was stored during device open
+//     struct qread_dev *dev = filp->private_data;
+//     ssize_t retval = -ENOMEM;
+//     size_t available_space;
+
+//     printk(KERN_DEBUG "Write-Start: pos: %lld, count: %zu, size: %u\n", 
+//            dev->size + *f_pos, count, dev->size);
+
+//     // Check if we're trying to write past the buffer end
+//     if (dev->size >= dev->S) {
+//         retval = -ENOSPC;  // No space for complete write
+//         goto out;
+//     }
+
+//     // Calculate available space (MaxSize - current size)
+//     available_space = dev->S - dev->size;
+//     if (count > available_space)
+//         count = available_space;  // Truncate the write to available space
+
+//     // Copy data from user space to kernel space
+//     // dev->data + *f_pos: Destination in kernel buffer, offset by current position
+//     // buf: Source buffer in user space
+//     // count: Number of bytes to copy
+//     if (copy_from_user(dev->data + dev->size + *f_pos, buff, count)) {
+//         retval = -EFAULT;
+//         goto out;
+//     }
+
+//     printk(KERN_DEBUG "Write-End: pos: %lld, written: %zu, size: %zu\n", 
+//         dev->size + *f_pos, count, dev->size + count);
+
+//     // Update current position, size
+//     *f_pos += count;
+//     dev->size += count;
+//     retval = count;
+
+// out:
+//     return retval;
+// }

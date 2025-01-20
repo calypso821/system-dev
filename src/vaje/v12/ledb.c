@@ -56,21 +56,40 @@ module_init(ledb_init);
 module_exit(ledb_exit);
 
 struct timer_list my_timer; 
-static unsigned long timer_interval = 2000;
+//static unsigned long timer_interval = 2000;
 
 int LEDon = 0;
 int SWITCHon = 0;
+bool active = false;
 
 // Timer callback function
+// static void timer_callback(struct timer_list *t)
+// {
+
+//     LEDon = !LEDon; 
+//     // !1, !2 -> None zero -> To Zero
+//     // !0 -> Zero to 1 
+
+//     // Restart timer
+//     mod_timer(&my_timer, jiffies + msecs_to_jiffies(timer_interval));
+
+//     printk(KERN_DEBUG "Timer execute: LEDon %d", LEDon);
+// }
+
 static void timer_callback(struct timer_list *t)
 {
-
-    LEDon = !LEDon; 
-    // !1, !2 -> None zero -> To Zero
-    // !0 -> Zero to 1 
-
-    // Restart timer
-    mod_timer(&my_timer, jiffies + msecs_to_jiffies(timer_interval));
+    LEDon = !LEDon;  // Toggle LED state
+    
+    // Set next timer interval based on SWITCHon state
+    if (SWITCHon == 1) { // SWITCH is ON
+        mod_timer(&my_timer, jiffies + msecs_to_jiffies(2000));  // 2s interval
+    } else if (active) { // SWITCH is OFF + active
+        mod_timer(&my_timer, jiffies + msecs_to_jiffies(500));   // 0.5s interval
+    } else { // SWITCH is OFF + not active
+        LEDon = 1;  // Set LED on if not active
+        printk(KERN_DEBUG "LED on");
+        return;     // Don't restart timer
+    }
 
     printk(KERN_DEBUG "Timer execute: LEDon %d", LEDon);
 }
@@ -103,6 +122,9 @@ int ledb_init(void)
 
     // Setup timer
     timer_setup(&my_timer, timer_callback, 0);
+
+    // Start timer
+    mod_timer(&my_timer, jiffies);
 
     printk(KERN_INFO "LED blink module initialized\n");
 	return 0;
@@ -144,44 +166,6 @@ int ledb_release(struct inode *inode, struct file *filp)
 
 ssize_t ledb_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-//     // retrieves the device structure that was stored during device open
-//     struct ledb_dev *dev = filp->private_data;
-//     size_t quantum = dev->Q;
-//     ssize_t retval = 0;
-
-//     printk(KERN_DEBUG "Read-Start: pos: %lld, count: %zu, size: %u\n",
-//            *f_pos, count, dev->size);
-
-//     // Check if we're past end of data
-//     if (*f_pos >= dev->size)
-//     {
-//         printk(KERN_DEBUG "Read-Complete\n");
-//         goto out;
-//     }
-
-//     // Set max number of bytes to read
-//     if (count > dev->size - *f_pos)
-//         count = dev->size - *f_pos;
-
-//     // Limit read to quantum size
-//     if (count > quantum)
-//         count = quantum;  // Read maximum one quantum at a time
-
-//     // Copy to user space from kernel buffer at current position
-//     if (copy_to_user(buf, dev->data + *f_pos, count)) {
-//         retval = -EFAULT;
-//         goto out;
-//     }
-
-//     *f_pos += count;  // Update position
-//     retval = count;   // Return number of bytes read
-
-//     printk(KERN_DEBUG "Read-End: pos: %lld, read: %zu\n", 
-//            *f_pos, count);
-
-// out:
-//     return retval;
-
     return 0;
 }
 
@@ -204,30 +188,24 @@ ssize_t ledb_write(struct file *filp, const char __user *buf, size_t count, loff
     switch(value) {
         case 0:
             // Stop LED blinking
-            if (SWITCHon == 0)
-                del_timer(&my_timer); // stops timer
+            active = false;
             break;
 
         case 1:
             // Start LED blinking with 0.5s interval
-            if (SWITCHon == 0)
-            {
-                timer_interval = 500;  // 0.5 seconds
-                mod_timer(&my_timer, jiffies);
-            }
+            active = true;
+            mod_timer(&my_timer, jiffies); // Call timer
             break;
 
         case 2:
             // Set SWITCH to 0
             SWITCHon = 0;
-            del_timer(&my_timer); // stops timer
             break;
 
         case 3:
             // Set SWITCH to 1 (2s timer)
             SWITCHon = 1;
-            timer_interval = 2000;
-            mod_timer(&my_timer, jiffies);
+            mod_timer(&my_timer, jiffies); // Call timer
             break;
 
         default:
@@ -235,10 +213,9 @@ ssize_t ledb_write(struct file *filp, const char __user *buf, size_t count, loff
     }
 
     // Print status after switch
-    printk(KERN_DEBUG "Status: Switch: %d, Timer: %s, Interval: %lu\n",
+    printk(KERN_DEBUG "Status: Switch: %d, Timer: %s\n",
            SWITCHon,
-           timer_pending(&my_timer) ? "active" : "not active",
-           timer_interval);
+           !SWITCHon && active ? "active" : "not active");
 
     retval = count;
 out:
