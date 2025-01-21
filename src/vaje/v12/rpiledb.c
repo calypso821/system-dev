@@ -65,20 +65,34 @@ bool active = true;
 // Timer callback function
 static void timer_callback(struct timer_list *t)
 {
+    uint32_t gpio_val;
+    
+    // Read GPIO 14 input state
+    gpio_val = ioread32(gpio_base + 0x34);  // Read GPIOLEV0
+    SWITCHon = (gpio_val & (1 << 14)) ? 1 : 0;  // Check bit 14
+    
     LEDon = !LEDon;  // Toggle LED state
     
-    // Set next timer interval based on SWITCHon state
-    if (SWITCHon == 1) { // SWITCH is ON
+    // Set GPIO 15 based on LEDon state
+    if (LEDon) {
+        iowrite32(1 << 15, gpio_base + 0x1C);  // Set GPIO 15 high using GPSET0
+    } else {
+        iowrite32(1 << 15, gpio_base + 0x28);  // Set GPIO 15 low using GPCLR0
+    }
+    
+    // Set next timer interval based on GPIO 14 state
+    if (SWITCHon == 1) { // GPIO 14 is HIGH
         mod_timer(&my_timer, jiffies + msecs_to_jiffies(2000));  // 2s interval
-    } else if (active) { // SWITCH is OFF + active
+    } else if (active) { // GPIO 14 is LOW + active
         mod_timer(&my_timer, jiffies + msecs_to_jiffies(500));   // 0.5s interval
-    } else { // SWITCH is OFF + not active
-        LEDon = 1;  // Set LED on if not active
-        printk(KERN_DEBUG "LED on");
+    } else { // GPIO 14 is LOW + not active
+        // Set GPIO 15 high when not active
+        iowrite32(1 << 15, gpio_base + 0x1C);
+        printk(KERN_DEBUG "GPIO 15 set HIGH");
         return;     // Don't restart timer
     }
 
-    printk(KERN_DEBUG "Timer execute: LEDon %d", LEDon);
+    printk(KERN_DEBUG "Timer execute: GPIO15=%d, GPIO14=%d", LEDon, SWITCHon);
 }
 
 
@@ -205,16 +219,16 @@ ssize_t rpiledb_write(struct file *filp, const char __user *buf, size_t count, l
             mod_timer(&my_timer, jiffies); // Call timer
             break;
 
-        case 2:
-            // Set SWITCH to 0
-            SWITCHon = 0;
-            break;
+        // case 2:
+        //     // Set SWITCH to 0
+        //     SWITCHon = 0;
+        //     break;
 
-        case 3:
-            // Set SWITCH to 1 (2s timer)
-            SWITCHon = 1;
-            mod_timer(&my_timer, jiffies); // Call timer
-            break;
+        // case 3:
+        //     // Set SWITCH to 1 (2s timer)
+        //     SWITCHon = 1;
+        //     mod_timer(&my_timer, jiffies); // Call timer
+        //     break;
 
         default:
             return -EINVAL;
