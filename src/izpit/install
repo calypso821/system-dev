@@ -1,0 +1,21 @@
+gcc 
+sudo apt update
+sudo apt install build-essential
+
+
+module
+Prevajanje modula (primer za datoteko moj_modul.c)
+1. Namesti zaglavne datoteke jedra (za WSL2 glej naslednjo stran, na virtualki je to že narejeno):
+sudo apt install linux-headers-$(uname -r)
+2. Ustvari datoteko Makefile in vanjo zapiši: obj-m := moj_modul.o
+3. V istem imeniku izvedi ukaz:
+sudo make -C /usr/src/linux-headers-$(uname -r) M=$(pwd) modules
+• Nalaganje modula
+1. sudo insmod ./moj_modul.ko → kliče se modul_init
+2. Izpis vseh naloženih modulov: lsmod
+3. Glavno število modula dobimo tako: cat /proc/devices
+4. Ustvarimo posebno datoteko:
+sudo mknod -m 666 /dev/moj_modul c MAJOR MINOR
+MAJOR izvemo v 3. koraku, MINOR je lahko 0
+5. Pregled sporočil modula (printk): dmesg (ali sudo dmesg -c)
+6. Modul odstranimo: sudo rmmod moj_modul

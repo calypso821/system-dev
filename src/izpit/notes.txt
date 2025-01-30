@@ -1,0 +1,35 @@
+
+Module 
+
+// Compile qread.ko
+// sudo make -C /usr/src/linux-headers-$(uname -r) M=$(pwd) modules
+// Makefile: obj-m := qread.o
+// Load: sudo insmod ./qread.ko
+// Unload: sudo rmmod ./qread.ko
+// file: sudo mknod -m 666 /dev/qread c 510 0
+// printk() - dmesg -w
+
+// # Load with custom sizes
+// sudo insmod qread.ko mem_size=25 blk_size=5
+// # Or load with defaults
+// sudo insmod qread.ko
+
+
+Normal files 
+
+// cd /data/repos/fri/spo/src
+// gcc -o server server.c 
+// ./server
+
+Phtread, Math 
+gcc your_program.c -lm -pthread -o output_name
+-lrt     # For real-time extensions (clock_gettime, etc.)
+
+Visual Studio Code
+
+Ctrl + Shift + F - Search across all files
+Ctrl + P - Quick file search/open
+Ctrl + F - Find in current file
+F12 or Ctrl + Click - Go to definition
+Alt + Left/Right - Navigate back/forward
+Ctrl + G - Go to line number
