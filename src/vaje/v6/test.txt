@@ -1,4 +1,0 @@
-(ID 1) To je sporocilo!
-(ID 2) To je sporocilo!
-(ID 3) To je sporocilo!
-(ID 4) To je sporocilo!
