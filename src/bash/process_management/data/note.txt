@@ -1,0 +1,29 @@
+tabela 
+tab=();
+${#tab[@]} = dolzina tabele 
+@ - vsi elementi 
+
+while true = while :;
+ps -p $x - vrne 1 ce najde, drugace 0 
+vsi procesi 
+top 
+ps -e
+ps ax
+ps aux - daljsi
+-o format 
+=pid - Proces ID
+=ppid - Parent Proces ID
+=comm - command name 
+=nice - ncie 
+Stars procesa "$(ps -o ppid= $1)"
+readlink -s - branje povezav 
+-s = silent 
+-f = canonicna pot 
+
+kill
+
+bc - calculator advance
+scale=2 - racuna na 2 decimlaki natancno 
+($vre+0.5)/1 = zaokorzevanje (celostevilsko deljenje)
+vre=$(bc <<<  "scale=2; $vre+$korak")
+index=$(bc <<< "(($vre+0.5)/1)-1")

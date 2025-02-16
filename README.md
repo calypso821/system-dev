@@ -36,3 +36,25 @@ This repository contains various examples and implementations of system programm
 - Basic Linux kernel module examples
 - Character device drivers
 - GPIO handling for Raspberry Pi
+
+### Bash scripts
+
+#### File System Management
+* Directory replication and organization
+* Permission and access control
+* Symbolic links and file processing
+
+#### Process Management
+* Process monitoring and priority control 
+* Process relationships and signals 
+* Resource tracking
+
+#### Text Processing
+* CSV and text file manipulation
+* Pattern matching and filtering
+* Stream processing
+
+#### User Administration
+* Account and directory management
+* Access control and permissions
+* Bulk user operations
